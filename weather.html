@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Weather App</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family: Arial, sans-serif;
+
+            background: linear-gradient(
+                135deg,
+                #00c6ff,
+                #0072ff
+            );
+
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 420px;
+
+            background: rgba(255, 255, 255, 0.96);
+
+            padding: 30px;
+
+            border-radius: 25px;
+
+            text-align: center;
+
+            box-shadow:
+                0 20px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        #status {
+            color: #666;
+            margin: 12px 0 20px;
+        }
+
+        button {
+            border: none;
+
+            background: #0072ff;
+            color: white;
+
+            padding: 14px 24px;
+
+            border-radius: 12px;
+
+            font-size: 16px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #005bd1;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .weather {
+            display: none;
+            margin-top: 25px;
+        }
+
+        .location {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .country {
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .icon {
+            font-size: 75px;
+            margin: 15px 0;
+        }
+
+        .temperature {
+            font-size: 55px;
+            font-weight: bold;
+        }
+
+        .condition {
+            font-size: 20px;
+            color: #555;
+            margin: 8px 0 20px;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .detail {
+            background: #f1f4f7;
+            padding: 15px;
+            border-radius: 15px;
+        }
+
+        .detail-title {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 6px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #d93025;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="card">
+
+    <h1>🌦️ Weather App</h1>
+
+    <p id="status">
+        Click below to get your weather
+    </p>
+
+    <button id="locationButton" onclick="getWeather()">
+        📍 Use My Location
+    </button>
+
+
+    <div class="weather" id="weather">
+
+        <div class="location" id="location">
+            --
+        </div>
+
+        <div class="country" id="country">
+            --
+        </div>
+
+        <div class="icon" id="weatherIcon">
+            🌤️
+        </div>
+
+        <div class="temperature" id="temperature">
+            --°C
+        </div>
+
+        <div class="condition" id="condition">
+            --
+        </div>
+
+
+        <div class="details">
+
+            <div class="detail">
+
+                <div class="detail-title">
+                    💧 Humidity
+                </div>
+
+                <div class="detail-value" id="humidity">
+                    --%
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-title">
+                    💨 Wind
+                </div>
+
+                <div class="detail-value" id="wind">
+                    -- km/h
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-title">
+                    🌡️ Real Feel
+                </div>
+
+                <div class="detail-value" id="realFeel">
+                    --°C
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="detail-title">
+                    ☔ Precipitation
+                </div>
+
+                <div class="detail-value" id="rain">
+                    --
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+
+// =====================================================
+// 🔑 YOUR ACCUWEATHER API KEY
+// =====================================================
+
+const API_KEY = "zpka_16c7107fa5c94c8dbee4e4a862267042_2adac69a";
+
+
+// =====================================================
+// GET WEATHER
+// =====================================================
+
+async function getWeather() {
+
+    const status =
+        document.getElementById("status");
+
+    const button =
+        document.getElementById("locationButton");
+
+
+    status.innerText =
+        "📍 Getting your location...";
+
+    button.disabled = true;
+
+
+    document.getElementById("weather")
+        .style.display = "none";
+
+
+    // =====================================================
+    // CHECK GEOLOCATION SUPPORT
+    // =====================================================
+
+    if (!navigator.geolocation) {
+
+        status.innerText =
+            "❌ Your browser does not support location.";
+
+        button.disabled = false;
+
+        return;
+    }
+
+
+    // =====================================================
+    // GET USER LOCATION
+    // =====================================================
+
+    navigator.geolocation.getCurrentPosition(
+
+        async function(position) {
+
+            try {
+
+                const latitude =
+                    position.coords.latitude;
+
+                const longitude =
+                    position.coords.longitude;
+
+
+                console.log(
+                    "Latitude:",
+                    latitude
+                );
+
+                console.log(
+                    "Longitude:",
+                    longitude
+                );
+
+
+                // =====================================================
+                // STEP 1
+                // GET ACCUWEATHER LOCATION
+                // =====================================================
+
+                status.innerText =
+                    "🌍 Finding your location...";
+
+
+                const locationURL =
+                    `https://dataservice.accuweather.com/locations/v1/geoposition/search?q=${latitude},${longitude}&toplevel=true`;
+
+
+                const locationResponse =
+                    await fetch(locationURL, {
+
+                        headers: {
+
+                            "Authorization":
+                                `Bearer ${API_KEY}`
+
+                        }
+
+                    });
+
+
+                console.log(
+                    "Location response:",
+                    locationResponse.status
+                );
+
+
+                if (!locationResponse.ok) {
+
+                    const errorText =
+                        await locationResponse.text();
+
+                    console.error(
+                        "Location API error:",
+                        errorText
+                    );
+
+                    throw new Error(
+                        `Location API error: ${locationResponse.status}`
+                    );
+                }
+
+
+                const locationData =
+                    await locationResponse.json();
+
+
+                console.log(
+                    "Location data:",
+                    locationData
+                );
+
+
+                // =====================================================
+                // 🚨 IMPORTANT FIX
+                //
+                // AccuWeather returns an ARRAY.
+                // Therefore we use [0].
+                // =====================================================
+
+                if (
+                    !Array.isArray(locationData) ||
+                    locationData.length === 0
+                ) {
+
+                    throw new Error(
+                        "AccuWeather returned no location."
+                    );
+
+                }
+
+
+                const location =
+                    locationData[0];
+
+
+                console.log(
+                    "Selected location:",
+                    location
+                );
+
+
+                // =====================================================
+                // GET LOCATION KEY
+                // =====================================================
+
+                const locationKey =
+                    location.Key;
+
+
+                if (!locationKey) {
+
+                    throw new Error(
+                        "Location Key was not returned."
+                    );
+
+                }
+
+
+                const city =
+                    location.LocalizedName ||
+                    location.EnglishName ||
+                    "Unknown location";
+
+
+                const country =
+                    location.Country &&
+                    (
+                        location.Country.LocalizedName ||
+                        location.Country.EnglishName
+                    )
+                    ||
+                    "";
+
+
+                console.log(
+                    "Location Key:",
+                    locationKey
+                );
+
+                console.log(
+                    "City:",
+                    city
+                );
+
+                console.log(
+                    "Country:",
+                    country
+                );
+
+
+                // =====================================================
+                // STEP 2
+                // GET CURRENT WEATHER
+                // =====================================================
+
+                status.innerText =
+                    "🌤️ Getting current weather...";
+
+
+                const weatherURL =
+                    `https://dataservice.accuweather.com/currentconditions/v1/${locationKey}`;
+
+
+                const weatherResponse =
+                    await fetch(weatherURL, {
+
+                        headers: {
+
+                            "Authorization":
+                                `Bearer ${API_KEY}`
+
+                        }
+
+                    });
+
+
+                console.log(
+                    "Weather response:",
+                    weatherResponse.status
+                );
+
+
+                if (!weatherResponse.ok) {
+
+                    const errorText =
+                        await weatherResponse.text();
+
+                    console.error(
+                        "Weather API error:",
+                        errorText
+                    );
+
+                    throw new Error(
+                        `Weather API error: ${weatherResponse.status}`
+                    );
+                }
+
+
+                const weatherData =
+                    await weatherResponse.json();
+
+
+                console.log(
+                    "Weather data:",
+                    weatherData
+                );
+
+
+                // =====================================================
+                // CHECK WEATHER RESPONSE
+                // =====================================================
+
+                if (
+                    !Array.isArray(weatherData) ||
+                    weatherData.length === 0
+                ) {
+
+                    throw new Error(
+                        "No weather data received."
+                    );
+
+                }
+
+
+                const weather =
+                    weatherData[0];
+
+
+                // =====================================================
+                // GET TEMPERATURE
+                // =====================================================
+
+                const temperature =
+                    weather.Temperature &&
+                    weather.Temperature.Metric
+                        ? weather.Temperature.Metric.Value
+                        : "--";
+
+
+                // =====================================================
+                // GET REAL FEEL
+                // =====================================================
+
+                const realFeel =
+                    weather.RealFeelTemperature &&
+                    weather.RealFeelTemperature.Metric
+                        ? weather.RealFeelTemperature.Metric.Value
+                        : "--";
+
+
+                // =====================================================
+                // GET WEATHER CONDITION
+                // =====================================================
+
+                const condition =
+                    weather.WeatherText ||
+                    "Unknown";
+
+
+                // =====================================================
+                // GET HUMIDITY
+                // =====================================================
+
+                const humidity =
+                    weather.RelativeHumidity !== undefined
+                        ? weather.RelativeHumidity
+                        : "--";
+
+
+                // =====================================================
+                // GET WIND
+                // =====================================================
+
+                let wind = "--";
+
+
+                if (
+                    weather.Wind &&
+                    weather.Wind.Speed &&
+                    weather.Wind.Speed.Metric
+                ) {
+
+                    wind =
+                        weather.Wind.Speed.Metric.Value;
+
+                }
+
+
+                // =====================================================
+                // PRECIPITATION
+                // =====================================================
+
+                const rain =
+                    weather.HasPrecipitation
+                        ? "Yes"
+                        : "No";
+
+
+                // =====================================================
+                // DISPLAY LOCATION
+                // =====================================================
+
+                document.getElementById(
+                    "location"
+                ).innerText = city;
+
+
+                document.getElementById(
+                    "country"
+                ).innerText = country;
+
+
+                // =====================================================
+                // DISPLAY WEATHER
+                // =====================================================
+
+                document.getElementById(
+                    "temperature"
+                ).innerText =
+                    `${temperature}°C`;
+
+
+                document.getElementById(
+                    "condition"
+                ).innerText =
+                    condition;
+
+
+                document.getElementById(
+                    "humidity"
+                ).innerText =
+                    `${humidity}%`;
+
+
+                document.getElementById(
+                    "wind"
+                ).innerText =
+                    `${wind} km/h`;
+
+
+                document.getElementById(
+                    "realFeel"
+                ).innerText =
+                    `${realFeel}°C`;
+
+
+                document.getElementById(
+                    "rain"
+                ).innerText =
+                    rain;
+
+
+                // =====================================================
+                // WEATHER ICON
+                // =====================================================
+
+                const text =
+                    condition.toLowerCase();
+
+
+                let icon = "🌤️";
+
+
+                if (
+                    text.includes("thunder") ||
+                    text.includes("storm")
+                ) {
+
+                    icon = "⛈️";
+
+                }
+
+                else if (
+                    text.includes("rain") ||
+                    text.includes("shower")
+                ) {
+
+                    icon = "🌧️";
+
+                }
+
+                else if (
+                    text.includes("cloud") ||
+                    text.includes("overcast")
+                ) {
+
+                    icon = "☁️";
+
+                }
+
+                else if (
+                    text.includes("snow")
+                ) {
+
+                    icon = "❄️";
+
+                }
+
+                else if (
+                    text.includes("fog") ||
+                    text.includes("haze")
+                ) {
+
+                    icon = "🌫️";
+
+                }
+
+                else if (
+                    text.includes("sunny") ||
+                    text.includes("clear")
+                ) {
+
+                    icon = "☀️";
+
+                }
+
+
+                document.getElementById(
+                    "weatherIcon"
+                ).innerText = icon;
+
+
+                // =====================================================
+                // SHOW WEATHER CARD
+                // =====================================================
+
+                document.getElementById(
+                    "weather"
+                ).style.display = "block";
+
+
+                status.innerText =
+                    "✅ Weather found!";
+
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "FULL ERROR:",
+                    error
+                );
+
+
+                status.innerHTML =
+                    `<span class="error">
+                        ❌ ${error.message}
+                    </span>`;
+
+            }
+
+
+            finally {
+
+                button.disabled = false;
+
+            }
+
+        },
+
+
+        // =====================================================
+        // LOCATION ERROR
+        // =====================================================
+
+        function(error) {
+
+            console.error(
+                "Geolocation error:",
+                error
+            );
+
+
+            if (error.code === 1) {
+
+                status.innerText =
+                    "❌ Location permission denied.";
+
+            }
+
+            else if (error.code === 2) {
+
+                status.innerText =
+                    "❌ Unable to determine your location.";
+
+            }
+
+            else if (error.code === 3) {
+
+                status.innerText =
+                    "❌ Location request timed out.";
+
+            }
+
+            else {
+
+                status.innerText =
+                    "❌ Could not get your location.";
+
+            }
+
+
+            button.disabled = false;
+
+        },
+
+
+        // =====================================================
+        // GEOLOCATION OPTIONS
+        // =====================================================
+
+        {
+
+            enableHighAccuracy: true,
+
+            timeout: 15000,
+
+            maximumAge: 300000
+
+        }
+
+    );
+
+}
+
+</script>
+
+
+</body>
+
+</html>
